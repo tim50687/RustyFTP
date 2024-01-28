@@ -18,31 +18,70 @@ pub enum Command {
 // Function to parse command line arguments into an FTP command
 pub fn parse_arguments(args: &[String]) -> Command {
     let command = &args[1];
-    let username;
-    let password;
-
-    // Get username and password
-    match get_username(&args[2]) {
-        Ok(_username) => {
-            username = _username;
-        }
-        _ => {
-            username = "".to_string();
-        }
-    }
-    match get_password(&args[2]) {
-        Ok(Some(_password)) => {
-            password = _password;
-        }
-        _ => {
-            password = "".to_string();   
-        }
-    }
+    let mut username = String::new();
+    let mut password = String::new();
     
     // Check if there are exactly 4 arguments (including the program name)
     if args.len() == 4 {
-        let source_url = args[2].clone();
-        let destination_url = args[3].clone();
+        let mut source_url = String::new();
+        let mut destination_url = String::new();
+        // Check args[2] or args[3] is the host
+        match get_host_str(&args[2]) {
+            Ok(Some(_source)) => {
+                source_url = _source + ":" + PORT;
+                destination_url = args[3].clone();
+                // Get username and password
+                match get_username(&args[2]) {
+                    Ok(_username) => {
+                        if _username != "".to_string(){
+                            username = _username;
+                        }
+                    }
+                    _ => {
+                        username = "".to_string();
+                    }
+                }
+                match get_password(&args[2]) {
+                    Ok(Some(_password)) => {
+                        password = _password;
+                    }
+                    _ => {
+                        password = "".to_string();
+                    }
+                }
+            }
+            _ => {
+                match get_host_str(&args[3]) {
+                    Ok(Some(_destination)) => {
+                        source_url = args[2].clone();
+                        destination_url = _destination + ":" + PORT;
+                        // Get username and password
+                        match get_username(&args[3]) {
+                            Ok(_username) => {
+                                if _username != "".to_string(){
+                                    username = _username;
+                                }
+                            }
+                            _ => {
+                                username = "".to_string();
+                            }
+                        }
+                        match get_password(&args[3]) {
+                            Ok(Some(_password)) => {
+                                password = _password;
+                            }
+                            _ => {
+                                password = "".to_string();
+                            }
+                        }
+                    }
+                    _ => {
+
+                    }
+                }
+            }
+        }
+
         match command.as_str() {
             "cp" => return Command::Copy(username, password, source_url, destination_url),
             "mv" => return Command::Move(username, password, source_url, destination_url),
@@ -54,12 +93,40 @@ pub fn parse_arguments(args: &[String]) -> Command {
         }
     }
 
-    let server_url = args[2].clone();
+    // 3 arguments
+    let mut host_str = String::new();
+    match get_host_str(&args[2]) {
+        Ok(Some(_host_str)) => {
+            host_str = _host_str + ":" + PORT;
+        }
+        _ => {
+            host_str = "".to_string();
+        }
+    }
+    // Get username and password
+    match get_username(&args[2]) {
+        Ok(_username) => {
+            if _username != "".to_string(){
+                username = _username;
+            }
+        }
+        _ => {
+            username = "".to_string();
+        }
+    }
+    match get_password(&args[2]) {
+        Ok(Some(_password)) => {
+            password = _password;
+        }
+        _ => {
+            password = "".to_string();
+        }
+    }
     match command.as_str() {
-        "ls" => Command::List(username, password, server_url),
-        "mkdir" => Command::MakeDir(username, password, server_url),
-        "rm" => Command::Remove(username, password, server_url),
-        "rmdir" => Command::RemoveDir(username, password, server_url),
+        "ls" => Command::List(username, password, host_str),
+        "mkdir" => Command::MakeDir(username, password, host_str),
+        "rm" => Command::Remove(username, password, host_str),
+        "rmdir" => Command::RemoveDir(username, password, host_str),
 
         _ => {
             println!("Invalud command: {command}");
@@ -68,13 +135,28 @@ pub fn parse_arguments(args: &[String]) -> Command {
     }
 }
 
+fn get_host_str(url: &str) -> Result<Option<String>, Box<dyn Error>> {
+    match Url::parse(url) {
+        Ok(parsed_url) => {
+            if let Some(host_str) = parsed_url.host_str() {
+                    let _host_str = host_str.to_string();
+                    return Ok(Some(_host_str));
+            }
+        }
+        Err(error) => {
+            eprintln!("Error parsing url: {:?}", error);
+        }
+    }
+    Ok(None)
+}
+
 
 fn get_username(url: &str) -> Result<String, Box<dyn Error>> {
     match Url::parse(url) {
         Ok(parsed_url) => {
             let username = parsed_url.username();
             if username != "" {
-                    return Ok(username.to_string());
+                return Ok(username.to_string());
             }
         }
         Err(error) => {
