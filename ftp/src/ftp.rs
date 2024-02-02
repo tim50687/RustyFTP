@@ -51,7 +51,7 @@ fn send_ftp_command(stream: &mut TcpStream, command: String) -> Result<String, s
 }
 
 // Function to send commands to ftp server and get data from the server
-fn send_ftp_command_with_data_stream(stream: &mut TcpStream, data_stream: &mut TcpStream, command: String) -> Result<String, std::io::Error> {
+fn receive_from_data_stream(stream: &mut TcpStream, data_stream: &mut TcpStream, command: String) -> Result<String, std::io::Error> {
     write_message(stream, command)?;
 
     match read_message(data_stream) {
@@ -167,7 +167,7 @@ pub fn send_pasv_command(stream: &mut TcpStream) -> Result<String, std::io::Erro
 
 // Send LIST command 
 pub fn send_list_command(stream: &mut TcpStream, data_stream: &mut TcpStream, path:&str) -> Result<String, std::io::Error> {
-    let message = match send_ftp_command_with_data_stream(stream, data_stream,  format!("LIST {}\r\n", path)) {
+    let message = match receive_from_data_stream(stream, data_stream,  format!("LIST {}\r\n", path)) {
         Ok(message) => message,
         Err(err) => return Err(err)
     };

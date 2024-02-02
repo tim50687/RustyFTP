@@ -44,8 +44,6 @@ fn main() {
                             eprintln!("Error creating data channel: {:?}", err);
                         }
                     }
-                    
-
                 }
                 Command::MakeDir(username, password, url) => {
                     login(&mut _stream, &username, &password);
@@ -60,13 +58,13 @@ fn main() {
                         println!("{}", message);
                     }
                 }
+                Command::Copy(username, password, source, destination) => {
+                    login(&mut _stream, &username, &password);
+                    println!("this is name");
+                }   
                 _ => {
                     println!("error");
                 }
-                
-                // Command::RemoveDir(username, password, url) {
-        
-                // }
                 // Command::List(username, password, source, destination) {
         
                 // }Command::List(username, password, source, destination) {
