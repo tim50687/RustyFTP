@@ -180,3 +180,16 @@ fn get_password(url: &str) -> Result<Option<String>, Box<dyn Error>> {
     }
     Ok(None)
 }
+
+
+// Extract last two number from the ftp server when creating data channel
+pub fn extract_last_two_numbers(response: &str) -> Option<(u16, u16)>{
+    let parts: Vec<&str> = response.split(',').collect();
+
+    let last: Vec<&str> = parts[parts.len() - 1].split(')').collect();
+
+    if let(Ok(second_last), Ok(last)) = (parts[parts.len() - 2].parse::<u16>(),last[last.len() - 2].parse::<u16>()) {
+        return Some((second_last, last));
+    }
+    None
+}

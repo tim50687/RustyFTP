@@ -2,19 +2,8 @@ mod utils;
 mod ftp;
 
 use std::env;
-use utils::{Command, parse_arguments};
-use std::net::TcpStream;
-use ftp::{connect_to_ftp_server, send_username_command, send_user_password_command, send_type_command, send_mode_command, send_stru_command, send_quit_command, send_mkdir_command, send_rmdir_command};
-
-// Login username and password
-fn login(stream: &mut TcpStream, username: &str, password: &str) -> () {
-    if let Ok(message) =  send_username_command(stream, username) {
-        println!("{}", message);
-    }
-    if let Ok(message) = send_user_password_command(stream, password) {
-        println!("{}", message);
-    }
-}
+use utils::{Command, parse_arguments, extract_last_two_numbers};
+use ftp::{connect_to_ftp_server, init_download_upload, send_quit_command, send_mkdir_command, send_rmdir_command, send_pasv_command, login, send_list_command};
 
 
 fn main() {
@@ -32,6 +21,30 @@ fn main() {
             match command {
                 Command::List(username, password, url) => {
                     login(&mut _stream, &username, &password);
+
+                    // Set up data channel
+                    let mut new_port = String::new();
+                    if let Ok(message) = send_pasv_command(&mut _stream) {
+                        if let Some((second_last, last)) = extract_last_two_numbers(&message) {
+                            // Calculate new port 
+                            new_port = ((second_last << 8) + last).to_string();
+                        }
+                    }
+                    
+                    match connect_to_ftp_server(host, &new_port) {
+                        Ok(mut data_stream) => {
+                            // Turn on TYPE MODE STRU
+                            init_download_upload(&mut _stream);
+                            if let Ok(message) = send_list_command(&mut _stream, &mut data_stream,&url) {
+                                println!("{}", message);
+                            }
+                        }
+                        Err(err) =>
+                        {
+                            eprintln!("Error creating data channel: {:?}", err);
+                        }
+                    }
+                    
 
                 }
                 Command::MakeDir(username, password, url) => {
@@ -62,14 +75,19 @@ fn main() {
                 
             }
 
+            // Quit the socket 
+            if let Ok(message) =  send_quit_command(&mut _stream) {
+                println!("{}", message);
+            }
         }
         Err(err) =>
         {
             eprintln!("Error connecting to FTP server: {:?}", err);
         }
 
-
+        
     }
+    
 
     // loop {
         

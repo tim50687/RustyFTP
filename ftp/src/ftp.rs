@@ -9,7 +9,10 @@ use std::io;
 
 pub fn connect_to_ftp_server(host: &str, port: &str) -> std::io::Result<TcpStream> {
     let mut stream = TcpStream::connect(format!("{host}:{port}"))?;
-
+    // If not control stream, we skip hello message
+    if port != "21" {
+        return Ok(stream);
+    }
     match read_message(&mut stream) {
         Ok(message) => println!("{message}"),
         Err(err) => eprintln!("Error reading message: {:?}", err),
@@ -47,8 +50,30 @@ fn send_ftp_command(stream: &mut TcpStream, command: String) -> Result<String, s
     }
 }
 
+// Function to send commands to ftp server and get data from the server
+fn send_ftp_command_with_data_stream(stream: &mut TcpStream, data_stream: &mut TcpStream, command: String) -> Result<String, std::io::Error> {
+    write_message(stream, command)?;
+
+    match read_message(data_stream) {
+        Ok(message) => Ok(message),
+        Err(err) => {
+            Err(err)
+        }
+    }
+}
+
+// Login username and password
+pub fn login(stream: &mut TcpStream, username: &str, password: &str) -> () {
+    if let Ok(message) =  send_username_command(stream, username) {
+        println!("{}", message);
+    }
+    if let Ok(message) = send_user_password_command(stream, password) {
+        println!("{}", message);
+    }
+}
+
 // Send username 
-pub fn send_username_command(stream: &mut TcpStream, username: &str) -> Result<String, std::io::Error> {
+fn send_username_command(stream: &mut TcpStream, username: &str) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("USER {}\r\n", username)) {
         Ok(message) => message,
         Err(err) => return Err(err)
@@ -57,7 +82,7 @@ pub fn send_username_command(stream: &mut TcpStream, username: &str) -> Result<S
 }
 
 // Send password 
-pub fn send_user_password_command(stream: &mut TcpStream, password: &str) -> Result<String, std::io::Error> {
+fn send_user_password_command(stream: &mut TcpStream, password: &str) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("PASS {}\r\n", password)) {
         Ok(message) => message,
         Err(err) => return Err(err)
@@ -65,8 +90,20 @@ pub fn send_user_password_command(stream: &mut TcpStream, password: &str) -> Res
     Ok(message)
 }
 
+pub fn init_download_upload(stream: &mut TcpStream) -> () {
+    if let Ok(message) = send_type_command(stream) {
+        println!("{}", message);
+    }
+    if let Ok(message) = send_mode_command(stream) {
+        println!("{}", message);
+    }
+    if let Ok(message) = send_stru_command(stream) {
+        println!("{}", message);
+    }
+}
+
 // Send TYPE command
-pub fn send_type_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
+fn send_type_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("TYPE I\r\n")) {
         Ok(message) => message,
         Err(err) => return Err(err)
@@ -75,7 +112,7 @@ pub fn send_type_command(stream: &mut TcpStream) -> Result<String, std::io::Erro
 }
 
 // Send MODE command
-pub fn send_mode_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
+fn send_mode_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("MODE S\r\n")) {
         Ok(message) => message,
         Err(err) => return Err(err)
@@ -84,7 +121,7 @@ pub fn send_mode_command(stream: &mut TcpStream) -> Result<String, std::io::Erro
 }
 
 // Send STRU command
-pub fn send_stru_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
+fn send_stru_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("STRU F\r\n")) {
         Ok(message) => message,
         Err(err) => return Err(err)
@@ -101,7 +138,7 @@ pub fn send_quit_command(stream: &mut TcpStream) -> Result<String, std::io::Erro
     Ok(message)
 }
 
-// send MKDIR command 
+// Send MKDIR command 
 pub fn send_mkdir_command(stream: &mut TcpStream, path:&str) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("MKD {}\r\n", path)) {
         Ok(message) => message,
@@ -110,9 +147,27 @@ pub fn send_mkdir_command(stream: &mut TcpStream, path:&str) -> Result<String, s
     Ok(message)
 }
 
-// send RMDIR command 
+// Send RMDIR command 
 pub fn send_rmdir_command(stream: &mut TcpStream, path:&str) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("RMD {}\r\n", path)) {
+        Ok(message) => message,
+        Err(err) => return Err(err)
+    };
+    Ok(message)
+}
+
+// Send PASV to create data channel
+pub fn send_pasv_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
+    let message = match send_ftp_command(stream, format!("PASV\r\n")) {
+        Ok(message) => message,
+        Err(err) => return Err(err)
+    };
+    Ok(message)
+}
+
+// Send LIST command 
+pub fn send_list_command(stream: &mut TcpStream, data_stream: &mut TcpStream, path:&str) -> Result<String, std::io::Error> {
+    let message = match send_ftp_command_with_data_stream(stream, data_stream,  format!("LIST {}\r\n", path)) {
         Ok(message) => message,
         Err(err) => return Err(err)
     };
