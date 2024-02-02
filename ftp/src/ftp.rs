@@ -34,3 +34,27 @@ fn write_message<T: Write>(write_stream: &mut T, message_to_sent: String) -> std
 
     Ok(())
 }
+
+// Send username 
+pub fn send_username_command(stream: &mut TcpStream, username: &str) -> Result<String, std::io::Error> {
+    write_message(stream, format!("USER {}\r\n", username))?;
+
+    let message = match read_message(stream) {
+        Ok(message) => message,
+        Err(err) => return Err(err),
+    };
+
+    Ok(message)
+}
+
+// Send password 
+pub fn send_user_password_command(stream: &mut TcpStream, password: &str) -> Result<String, std::io::Error> {
+    write_message(stream, format!("PASS {}\r\n", password))?;
+
+    let message = match read_message(stream) {
+        Ok(message) => message,
+        Err(err)=> return Err(err),
+    };
+
+    Ok(message)
+}
