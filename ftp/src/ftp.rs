@@ -4,6 +4,7 @@ use std::io::Write;
 use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
+use std::fs;
 use std::io;
 
 
@@ -183,6 +184,15 @@ pub fn send_rmdir_command(stream: &mut TcpStream, path:&str) -> Result<String, s
     Ok(message)
 }
 
+// Send REMOVE command 
+pub fn send_remove_command(stream: &mut TcpStream, path:&str) -> Result<String, std::io::Error> {
+    let message = match send_ftp_command(stream, format!("DELE {}\r\n", path)) {
+        Ok(message) => message,
+        Err(err) => return Err(err)
+    };
+    Ok(message)
+}
+
 // Send PASV to create data channel
 pub fn send_pasv_command(stream: &mut TcpStream) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("PASV\r\n")) {
@@ -239,6 +249,54 @@ pub fn send_copy_command(stream: &mut TcpStream, data_stream: &mut TcpStream, so
             write_message(stream, format!("RETR {}\r\n", source));
             
             create_file_from_stream(data_stream, destination);
+            message = match read_message(stream) {
+                Ok(message) => message,
+                Err(err) => {
+                    return Err(err);
+                }
+            };
+            return Ok(message);
+        }
+    }
+
+    Ok(message)
+}
+
+// Send COPY command
+pub fn send_move_command(stream: &mut TcpStream, data_stream: &mut TcpStream, source: &str, destination: &str, args: &[String]) -> Result<String, std::io::Error> {
+    let mut message = String::new();
+    if let Some(arg3) = args.get(3) {
+        // logic for local mv to server
+        if arg3.starts_with("ftp://") {
+            // control stream write message
+            write_message(stream, format!("STOR {}\r\n", source));
+
+            write_file_to_stream(data_stream, source);
+
+            // delete file in local
+            match fs::remove_file(source) {
+                Ok(_) => println!("File deleted successfully."),
+                Err(err) => eprintln!("Error deleting file: {:?}", err),
+            }
+
+            message = match read_message(stream) {
+                Ok(message) => message,
+                Err(err) => {
+                    return Err(err);
+                }
+            };
+            return Ok(message);
+        }
+        // logic for server mv to local
+        else {
+            // control stream write message
+            write_message(stream, format!("RETR {}\r\n", source));
+            
+            create_file_from_stream(data_stream, destination);
+
+            // delete file on the ftp server
+            write_message(stream, format!("DELE {}\r\n", source));
+
             message = match read_message(stream) {
                 Ok(message) => message,
                 Err(err) => {
