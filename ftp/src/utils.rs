@@ -28,7 +28,7 @@ pub fn parse_arguments(args: &[String]) -> Command {
         // Check args[2] or args[3] is the host
         match get_host_str(&args[2]) {
             Ok(Some(_source)) => {
-                source_url = _source + ":" + PORT;
+                source_url = _source;
                 destination_url = args[3].clone();
                 // Get username and password
                 match get_username(&args[2]) {
@@ -54,7 +54,7 @@ pub fn parse_arguments(args: &[String]) -> Command {
                 match get_host_str(&args[3]) {
                     Ok(Some(_destination)) => {
                         source_url = args[2].clone();
-                        destination_url = _destination + ":" + PORT;
+                        destination_url = _destination;
                         // Get username and password
                         match get_username(&args[3]) {
                             Ok(_username) => {
@@ -97,7 +97,7 @@ pub fn parse_arguments(args: &[String]) -> Command {
     let mut host_str = String::new();
     match get_host_str(&args[2]) {
         Ok(Some(_host_str)) => {
-            host_str = _host_str + ":" + PORT;
+            host_str = _host_str;
         }
         _ => {
             host_str = "".to_string();
@@ -138,10 +138,9 @@ pub fn parse_arguments(args: &[String]) -> Command {
 fn get_host_str(url: &str) -> Result<Option<String>, Box<dyn Error>> {
     match Url::parse(url) {
         Ok(parsed_url) => {
-            if let Some(host_str) = parsed_url.host_str() {
-                    let _host_str = host_str.to_string();
-                    return Ok(Some(_host_str));
-            }
+
+                return Ok(Some(parsed_url.path().to_string()));
+            
         }
         Err(error) => {
             eprintln!("Error parsing url: {:?}", error);
