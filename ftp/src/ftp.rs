@@ -101,6 +101,16 @@ fn send_ftp_command(stream: &mut TcpStream, command: String) -> Result<String, s
     }
 }
 
+// Login username and password
+pub fn login(stream: &mut TcpStream, username: &str, password: &str) -> () {
+    if let Ok(message) =  send_username_command(stream, username) {
+        println!("{}", message);
+    }
+    if let Ok(message) = send_user_password_command(stream, password) {
+        println!("{}", message);
+    }
+}
+
 // Function to log in with a username
 fn send_username_command(stream: &mut TcpStream, username: &str) -> Result<String, std::io::Error> {
     let message = match send_ftp_command(stream, format!("USER {}\r\n", username)) {
