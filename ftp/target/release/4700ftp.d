@@ -1,0 +1,1 @@
+/Users/jentinghuang/Documents/CSAlign/CS5700/projects/RustyFTP/ftp/target/release/4700ftp: /Users/jentinghuang/Documents/CSAlign/CS5700/projects/RustyFTP/ftp/src/ftp.rs /Users/jentinghuang/Documents/CSAlign/CS5700/projects/RustyFTP/ftp/src/main.rs /Users/jentinghuang/Documents/CSAlign/CS5700/projects/RustyFTP/ftp/src/utils.rs
