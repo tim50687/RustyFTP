@@ -4,7 +4,6 @@ use std::error::Error;
 const PORT: &str = "21";
 
 // Define an enumeration to represent FTP commands
-// (username, password, url, <url>)
 #[derive(Debug)]
 pub enum Command {
     List(String, String, String),
@@ -135,12 +134,11 @@ pub fn parse_arguments(args: &[String]) -> Command {
     }
 }
 
+// Function to extract the host string from a URL
 fn get_host_str(url: &str) -> Result<Option<String>, Box<dyn Error>> {
     match Url::parse(url) {
         Ok(parsed_url) => {
-
-                return Ok(Some(parsed_url.path().to_string()));
-            
+            return Ok(Some(parsed_url.path().to_string()));
         }
         Err(error) => {
             eprintln!("Error parsing url: {:?}", error);
@@ -149,7 +147,7 @@ fn get_host_str(url: &str) -> Result<Option<String>, Box<dyn Error>> {
     Ok(None)
 }
 
-
+// Function to extract the username from a URL
 fn get_username(url: &str) -> Result<String, Box<dyn Error>> {
     match Url::parse(url) {
         Ok(parsed_url) => {
@@ -165,13 +163,13 @@ fn get_username(url: &str) -> Result<String, Box<dyn Error>> {
     Ok("".to_string())
 }
 
+// Function to extract the password from a URL
 fn get_password(url: &str) -> Result<Option<String>, Box<dyn Error>> {
     match Url::parse(url) {
         Ok(parsed_url) => {
-            
             if let Some(password) = parsed_url.password() {
                 let _password = password.to_string();
-                    return Ok(Some(_password));
+                return Ok(Some(_password));
             }
         }
         Err(error) => {
@@ -181,14 +179,13 @@ fn get_password(url: &str) -> Result<Option<String>, Box<dyn Error>> {
     Ok(None)
 }
 
-
-// Extract last two number from the ftp server when creating data channel
-pub fn extract_last_two_numbers(response: &str) -> Option<(u16, u16)>{
+// Function to extract the last two numbers from an FTP server response
+pub fn extract_last_two_numbers(response: &str) -> Option<(u16, u16)> {
     let parts: Vec<&str> = response.split(',').collect();
 
     let last: Vec<&str> = parts[parts.len() - 1].split(')').collect();
 
-    if let(Ok(second_last), Ok(last)) = (parts[parts.len() - 2].parse::<u16>(),last[last.len() - 2].parse::<u16>()) {
+    if let (Ok(second_last), Ok(last)) = (parts[parts.len() - 2].parse::<u16>(), last[last.len() - 2].parse::<u16>()) {
         return Some((second_last, last));
     }
     None
